@@ -2,6 +2,8 @@ package u05lab.ex1
 
 import u05lab.ex1.List
 
+import scala.annotation.tailrec
+
 // Ex 1. implement the missing methods both with recursion or with using fold, map, flatMap, and filters
 // List as a pure interface
 enum List[A]:
@@ -59,16 +61,34 @@ enum List[A]:
   def reverse(): List[A] = foldLeft[List[A]](Nil())((l, e) => e :: l)
 
   /** EXERCISES */
-  def zipRight: List[(A, Int)] = ???
 
-  def partition(pred: A => Boolean): (List[A], List[A]) = ???
+  def zipRight: List[(A, Int)] =
+    def zipRightCont(c: Int, l: List[A]): List[(A, Int)] = l match
+      case h :: t => (h, c) :: zipRightCont(c + 1, t)
+      case _ => Nil()
+    zipRightCont(0, this)
+  
+  def partition(pred: A => Boolean): (List[A], List[A]) = (this.filter(pred), this.filter(x => !pred(x)))
 
-  def span(pred: A => Boolean): (List[A], List[A]) = ???
+  def span(pred: A => Boolean): (List[A], List[A]) =
+    @tailrec
+    def _span(okSplit: List[A], toCheck: List[A]): (List[A], List[A]) = toCheck match
+      case h :: t if pred(h) => _span(okSplit.append(h :: Nil()), t)
+      case _ => (okSplit, toCheck)
+    _span(Nil(), this)
 
   /** @throws UnsupportedOperationException if the list is empty */
-  def reduce(op: (A, A) => A): A = ???
+  def reduce(op: (A, A) => A): A = this match
+    case Nil() => throw UnsupportedOperationException()
+    case h :: Nil() => h
+    case h :: t => op(h, t.reduce(op))
 
-  def takeRight(n: Int): List[A] = ???
+  def takeRight(n: Int): List[A] = this match
+    case h :: t if n == 0 => t
+    case _ => takeRight(n - 1)
+
+  //function that accepts a PartialFunction[A,B] and performs map & filter in one shot
+  def collect[B](pf : PartialFunction[A, B]): List[B] = this.filter(x => pf.isDefinedAt(x)).map(x => pf.apply(x))
 
 // Factories
 object List:
